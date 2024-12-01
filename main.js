@@ -65,6 +65,8 @@ function displayCourses() {
         `;
         coursesList.appendChild(courseElement);
     });
+
+    updateCourseFilter();
 }
 
 function showCourseDetails(courseId) {
@@ -149,9 +151,33 @@ function isPassingGrade(grade, totalScore, gradingSystem) {
     }
 }
 
-function displayStudents(filterType = 'all') {
+// ... existing code up to displayStudents function ...
+
+function displayStudents(filterType = 'all', selectedCourseId = '') {
     const studentsList = document.getElementById('studentsList');
     const currentSystem = document.getElementById('gradingSystem').checked ? "7" : "10";
+    
+    // Add course filter dropdown if it doesn't exist
+    let courseFilter = document.querySelector('#courseFilter');
+    if (!courseFilter) {
+        courseFilter = document.createElement('select');
+        courseFilter.id = 'courseFilter';
+        courseFilter.className = 'course-filter';
+        courseFilter.innerHTML = '<option value="">All Courses</option>';
+        
+        courses.forEach(course => {
+            courseFilter.innerHTML += `<option value="${course.id}">${course.name}</option>`;
+        });
+        
+        courseFilter.addEventListener('change', (e) => {
+            const activeFilterType = document.querySelector('.filters button.active')?.dataset?.filter || 'all';
+            displayStudents(activeFilterType, e.target.value);
+        });
+        
+        // Filtreler bölümüne course filter'ı ekle
+        const filtersSection = document.querySelector('.filters');
+        filtersSection.insertBefore(courseFilter, filtersSection.firstChild);
+    }
     
     studentsList.innerHTML = `
         <table>
@@ -170,9 +196,15 @@ function displayStudents(filterType = 'all') {
             <tbody>
     `;
     
-    let filteredStudents = students;
+    // Önce derse göre filtrele
+    let filteredStudents = selectedCourseId 
+        ? students.filter(student => student.courseId === selectedCourseId)
+        : students;
+    
+    // Sonra pass/fail durumuna göre filtrele
     if (filterType === 'passed' || filterType === 'failed') {
-        filteredStudents = students.filter(student => {
+        filteredStudents = filteredStudents.filter(student => {
+            const course = courses.find(c => c.id === student.courseId);
             const grade = calculateGrade(student.midterm, student.final, {gradingSystem: currentSystem});
             const isPassing = grade !== 'F';
             return filterType === 'passed' ? isPassing : !isPassing;
@@ -204,61 +236,71 @@ function displayStudents(filterType = 'all') {
     });
     
     studentsList.innerHTML += '</tbody></table>';
-}
-
-function filterStudents(type) {
-    // Aktif butonu güncelle
+    
+    // Filtre butonlarının active state'ini güncelle
     document.querySelectorAll('.filters button').forEach(btn => {
         btn.classList.remove('active');
+        if(btn.getAttribute('onclick')?.includes(`'${filterType}'`)) {
+            btn.classList.add('active');
+        }
     });
-    document.querySelector(`.filters button[onclick="filterStudents('${type}')"]`).classList.add('active');
-    
-    displayStudents(type);
 }
 
+// Update the existing handleSearch function to include course filtering
 function handleSearch(event) {
     const searchTerm = event.target.value.toLowerCase();
     const searchResults = document.getElementById('searchResults');
+    const selectedCourseId = document.getElementById('courseFilter')?.value || '';
+    const currentSystem = document.getElementById('gradingSystem').checked ? "7" : "10";
     
     if (!searchTerm) {
         searchResults.innerHTML = '';
         return;
     }
     
-    const matchingStudents = students.filter(student => 
-        student.name.toLowerCase().includes(searchTerm) ||
+    // Hem arama terimine hem de seçili derse göre filtrele
+    let matchingStudents = students.filter(student => 
+        (student.name.toLowerCase().includes(searchTerm) ||
         student.surname.toLowerCase().includes(searchTerm) ||
-        student.id.includes(searchTerm)
+        student.id.includes(searchTerm)) &&
+        (!selectedCourseId || student.courseId === selectedCourseId)
     );
     
     searchResults.innerHTML = '';
     matchingStudents.forEach(student => {
+        const course = courses.find(c => c.id === student.courseId);
         const totalScore = (student.midterm * 0.4) + (student.final * 0.6);
-        const grade10 = calculateGrade(student.midterm, student.final, {gradingSystem: "10"});
-        const grade7 = calculateGrade(student.midterm, student.final, {gradingSystem: "7"});
+        const grade = calculateGrade(student.midterm, student.final, {gradingSystem: currentSystem});
         
         const card = document.createElement('div');
         card.className = 'student-card';
         card.innerHTML = `
             <h3>${student.name} ${student.surname}</h3>
             <p>Student ID: ${student.id}</p>
+            <p>Course: ${course.name}</p>
             <p>Total Score: ${totalScore.toFixed(2)}</p>
-            <p>10-point Grade: ${grade10}</p>
-            <p>7-point Grade: ${grade7}</p>
+            <p>Grade: ${grade}</p>
         `;
         
         searchResults.appendChild(card);
     });
 }
 
+function updateCourseFilter() {
+    const courseFilter = document.getElementById('courseFilter');
+    if (courseFilter) {
+        const selectedValue = courseFilter.value; // Mevcut seçimi kaydet
+        courseFilter.innerHTML = '<option value="">All Courses</option>';
+        courses.forEach(course => {
+            courseFilter.innerHTML += `<option value="${course.id}">${course.name}</option>`;
+        });
+        courseFilter.value = selectedValue; // Eğer hala mevcutsa seçimi geri yükle
+    }
+}
+
 function filterStudents(type) {
-    // Aktif butonu güncelle
-    document.querySelectorAll('.filters button').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelector(`.filters button[onclick="filterStudents('${type}')"]`).classList.add('active');
-    
-    displayStudents(type);
+    const selectedCourseId = document.getElementById('courseFilter')?.value || '';
+    displayStudents(type, selectedCourseId);
 }
 
 function deleteStudent(studentId) {
@@ -270,7 +312,14 @@ function deleteCourse(courseId) {
     courses = courses.filter(c => c.id !== courseId);
     students = students.filter(s => s.courseId !== courseId);
     updateCourseSelect();
-    displayCourses();
+    displayCourses(); // Bu zaten course filter'ı güncelleyecek
+
+    // Eğer silinen ders seçili ise, tüm dersleri göster
+    const courseFilter = document.getElementById('courseFilter');
+    if (courseFilter && courseFilter.value === courseId) {
+        courseFilter.value = '';
+        displayStudents(); // Öğrenci listesini güncelle
+    }
 }
 
 function editStudent(studentId) {
@@ -289,7 +338,9 @@ function editStudent(studentId) {
 
 // Grading system değişikliğini dinle
 document.getElementById('gradingSystem').addEventListener('change', function() {
-    displayStudents(document.querySelector('.filters button.active')?.dataset?.filter || 'all');
+    const activeFilterType = document.querySelector('.filters button.active')?.dataset?.filter || 'all';
+    const selectedCourseId = document.getElementById('courseFilter')?.value || '';
+    displayStudents(activeFilterType, selectedCourseId);
 });
 // Tüm notları güncelle
 function updateAllGrades(system) {
@@ -358,6 +409,14 @@ function createInitialData() {
     updateCourseSelect();
     displayCourses();
     displayStudents();
+
+    const allButton = document.querySelector('.filters button:nth-child(1)');
+    const passedButton = document.querySelector('.filters button:nth-child(2)');
+    const failedButton = document.querySelector('.filters button:nth-child(3)');
+    
+    if(allButton) allButton.dataset.filter = 'all';
+    if(passedButton) passedButton.dataset.filter = 'passed';
+    if(failedButton) failedButton.dataset.filter = 'failed';
 }
 
 // Sayfa yüklendiğinde başlangıç verilerini oluştur
