@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Student Management System</h1>
+            <nav>
+                <button onclick="showSection('courses')" class="nav-btn">Courses</button>
+                <button onclick="showSection('students')" class="nav-btn">Students</button>
+                <button onclick="showSection('search')" class="nav-btn">Search</button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Courses Section -->
+            <section id="courses" class="section">
+                <h2>Course Management</h2>
+                <form id="courseForm" onsubmit="handleAddCourse(event)">
+                    <input type="text" id="courseName" placeholder="Course Name" required>
+                    <button type="submit">Add Course</button>
+                </form>
+                <div id="coursesList"></div>
+            </section>
+
+            <!-- Students Section -->
+            <section id="students" class="section hidden">
+                <h2>Student Management</h2>
+                <form id="studentForm" onsubmit="handleAddStudent(event)">
+                    <select id="courseSelect" required>
+                        <option value="">Select Course</option>
+                    </select>
+                    <input type="text" id="studentId" placeholder="Student ID" required>
+                    <input type="text" id="studentName" placeholder="First Name" required>
+                    <input type="text" id="studentSurname" placeholder="Last Name" required>
+                    <input type="number" id="midtermScore" placeholder="Midterm Score" required min="0" max="100">
+                    <input type="number" id="finalScore" placeholder="Final Score" required min="0" max="100">
+                    <button type="submit">Add Student</button>
+                </form>
+                <div class="filters">
+                    <div class="grading-scale">
+                        <div class="toggle-container">
+                            <input type="checkbox" id="gradingSystem" class="toggle-input">
+                            <label for="gradingSystem" class="toggle-label">
+                                <span class="toggle-text-10">10-Point</span>
+                                <span class="toggle-switch"></span>
+                                <span class="toggle-text-7">7-Point</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button onclick="filterStudents('all')">All Students</button>
+                    <button onclick="filterStudents('passed')">Passed Students</button>
+                    <button onclick="filterStudents('failed')">Failed Students</button>
+                </div>
+                <div id="studentsList"></div>
+            </section>
+
+            <!-- Search Section -->
+            <section id="search" class="section hidden">
+                <h2>Search Students</h2>
+                <input type="text" id="searchInput" placeholder="Search by name or ID" oninput="handleSearch(event)">
+                <div id="searchResults"></div>
+            </section>
+        </main>
+    </div>
+    <script src="main.js"></script>
+</body>
+</html>
