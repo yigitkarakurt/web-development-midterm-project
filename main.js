@@ -134,9 +134,9 @@ const displayCourses = () => {
         state.courses.map(course => `
             <div class="student-card">
                 <h3>${course.name}</h3>
-                <p>Total Students: ${state.students.filter(s => s.courseId === course.id).length}</p> // Toplam öğrenci sayısını göster
-                <button onclick="showCourseDetails('${course.id}')">View Details</button> // Detayları göster butonu
-                <button onclick="deleteCourse('${course.id}')">Delete Course</button> // Kursu sil butonu
+                <p>Total Students: ${state.students.filter(s => s.courseId === course.id).length}</p>
+                <button onclick="showCourseDetails('${course.id}')">View Details</button>
+                <button onclick="deleteCourse('${course.id}')">Delete Course</button>
             </div>
         `).join('');
 
@@ -233,11 +233,11 @@ const displayStudents = () => {
                             <td>${student.final}</td>
                             <td>${totalScore.toFixed(2)}</td>
                             <td class="grade-cell" data-student-id="${student.id}">
-                                <span class="grade-${grade}">${grade}</span> // Notu göster
+                                <span class="grade-${grade}">${grade}</span>
                             </td>
                             <td>
-                                <button onclick="deleteStudent('${student.id}')">Delete</button> // Öğrenciyi sil butonu
-                                <button onclick="editStudent('${student.id}')">Edit</button> // Öğrenciyi düzenle butonu
+                                <button onclick="deleteStudent('${student.id}')">Delete</button>
+                                <button onclick="editStudent('${student.id}')">Edit</button>
                             </td>
                         </tr>
                     `;
