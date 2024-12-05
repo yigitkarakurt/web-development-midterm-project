@@ -5,7 +5,8 @@ const state = {
     filters: { // Filtreleme seçenekleri
         courseId: '', // Seçilen kurs ID'si
         type: 'all' // Filtreleme türü (tümü, geçti, kaldı)
-    }
+    },
+    editing: null // Düzenlenen öğrencinin ID'sini tutacak
 };
 
 // Constants
@@ -260,7 +261,21 @@ const updateFilterButtons = () => {
 // Olay işleyicileri
 const handleAddCourse = event => {
     event.preventDefault(); // Varsayılan davranışı engelle
+
+    const courseName = getElement('courseName').value.trim(); // Kurs adını al
     
+    // Aynı isimli kurs var mı kontrol et
+    if (state.courses.some(c => c.name.toLowerCase() === courseName.toLowerCase())) {
+        alert(`Course "${courseName}" already exists!`);
+        return;
+    }
+
+    // Form validasyonu
+    if (!courseName) {
+        alert('Please enter a course name.');
+        return;
+    }
+
     const course = {
         id: Date.now().toString(), // Kurs ID'si
         name: getElement('courseName').value, // Kurs adı
@@ -274,27 +289,60 @@ const handleAddCourse = event => {
 };
 
 const handleAddStudent = event => {
-    event.preventDefault(); // Varsayılan davranışı engelle
+    event.preventDefault();
+    
+    const studentId = getElement('studentId').value;
+
+    // Eğer düzenleme modu değilse ve aynı ID'li öğrenci varsa hata ver
+    if (!state.editing && state.students.some(s => s.id === studentId)) {
+        alert(`Student with ID ${studentId} already exists!`);
+        return;
+    }
     
     const formData = {
-        courseId: getElement('courseSelect').value, // Seçilen kurs ID'si
-        midterm: Number(getElement('midtermScore').value), // Vize notu
-        final: Number(getElement('finalScore').value) // Final notu
+        courseId: getElement('courseSelect').value,
+        midterm: Number(getElement('midtermScore').value),
+        final: Number(getElement('finalScore').value)
     };
     
-    const course = state.courses.find(c => c.id === formData.courseId); // Kursu bul
+    const course = state.courses.find(c => c.id === formData.courseId);
     
     const student = {
-        id: getElement('studentId').value, // Öğrenci ID'si
-        name: getElement('studentName').value, // Öğrenci adı
-        surname: getElement('studentSurname').value, // Öğrenci soyadı
-        ...formData, // Form verilerini ekle
-        grade: calculateGrade(formData.midterm, formData.final, course) // Notu hesapla
+        id: studentId,
+        name: getElement('studentName').value,
+        surname: getElement('studentSurname').value,
+        ...formData,
+        grade: calculateGrade(formData.midterm, formData.final, course)
     };
+
+    // Form validasyonu
+    if (!student.name || !student.surname || !student.courseId || 
+        student.midterm < 0 || student.midterm > 100 || 
+        student.final < 0 || student.final > 100) {
+        alert('Please fill all fields correctly. Scores must be between 0 and 100.');
+        return;
+    }
+
+    if (state.editing) {
+        // Düzenleme modundaysa, öğrenciyi güncelle
+        const studentIndex = state.students.findIndex(s => s.id === state.editing);
+        if (studentIndex !== -1) {
+            state.students[studentIndex] = student;
+        }
+        state.editing = null;
+    } else {
+        // Yeni öğrenci ekleme modu
+        state.students.push(student);
+    }
     
-    state.students.push(student); // Öğrenciyi duruma ekle
-    displayStudents(); // Öğrencileri göster
-    event.target.reset(); // Formu sıfırla
+    displayStudents();
+    event.target.reset();
+
+    // Reset butonunu "Add Student" olarak değiştir
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.textContent = 'Add Student';
+    }
 };
 
 const handleSearch = event => {
@@ -356,18 +404,33 @@ const deleteCourse = courseId => {
     }
 };
 
+
 const editStudent = studentId => {
-    const student = state.students.find(s => s.id === studentId); // Öğrenciyi bul
-    if (!student) return; // Öğrenci yoksa çık
+    const student = state.students.find(s => s.id === studentId);
+    if (!student) return;
     
-    // Öğrenci bilgilerini form elemanlarına yerleştir
+    // Düzenleme modunu ayarla
+    state.editing = studentId;
+    
+    // Form alanlarını doldur
     ['courseId', 'id', 'name', 'surname', 'midterm', 'final'].forEach(field => {
         const elementId = field === 'courseId' ? 'courseSelect' : 
-            field.includes('Score') ? field : `student${field.charAt(0).toUpperCase() + field.slice(1)}`;
-        getElement(elementId).value = student[field]; // Değerleri ayarla
+            field === 'midterm' ? 'midtermScore' :
+            field === 'final' ? 'finalScore' :
+            `student${field.charAt(0).toUpperCase() + field.slice(1)}`;
+        getElement(elementId).value = student[field];
     });
     
-    state.students = state.students.filter(s => s.id !== studentId); // Öğrenciyi sil
+    // Submit butonunu "Update Student" olarak değiştir
+    const form = getElement('studentId').closest('form');
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.textContent = 'Update Student';
+    }
+    
+    // Formu görünür yap ve scroll
+    showSection('addStudentSection');
+    form.scrollIntoView({ behavior: 'smooth' });
 };
 
 // Başlangıç verilerini oluşturma fonksiyonu
