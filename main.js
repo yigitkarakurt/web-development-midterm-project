@@ -424,8 +424,9 @@ const deleteCourse = courseId => {
         }
         displayStudents(); // Öğrencileri göster
     }
-};
 
+    displayStudents()
+};
 
 const editStudent = studentId => {
     const student = state.students.find(s => s.id === studentId);
