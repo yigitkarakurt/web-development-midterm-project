@@ -116,7 +116,10 @@ const displayCourseStatistics = (courseId) => {
 
     // İstatistikleri DOM'a ekle
     const details = createElementWithHTML('div', 'stats', `
-        <h3>${course.name} - Statistics</h3>
+        <h3>
+            <input type="text" value="${course.name}" id="editCourseName-${courseId}" />
+            <button onclick="updateCourseName('${courseId}')">Update</button>
+        </h3>
         <p>Total Students: ${stats.total}</p>
         <p>Passed Students: ${stats.passed}</p>
         <p>Failed Students: ${stats.failed}</p>
@@ -126,6 +129,25 @@ const displayCourseStatistics = (courseId) => {
 
     const courseCard = document.querySelector(`[onclick="showCourseDetails('${courseId}')"]`).closest('.student-card'); // Kurs kartını bul
     courseCard.after(details); // İstatistikleri kartın altına ekle
+};
+
+// Yeni fonksiyon: Kurs adını güncelle
+const updateCourseName = (courseId) => {
+    const newName = getElement(`editCourseName-${courseId}`).value; // Yeni kurs adını al
+    const course = state.courses.find(c => c.id === courseId); // Kursu bul
+    if (course) {
+        course.name = newName; // Kurs adını güncelle
+        
+        // Öğrencilerin ders adını güncelle
+        state.students.forEach(student => {
+            if (student.courseId === courseId) {
+                student.courseName = newName; // Öğrencinin ders adını güncelle
+            }
+        });
+
+        displayCourses(); // Kursları güncelle
+        displayStudents(); // Öğrencileri güncelle
+    }
 };
 
 // Kursları gösterme fonksiyonu
